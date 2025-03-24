@@ -1,0 +1,27 @@
+$ThresholdMB = 700
+$UserProfiles = Get-ChildItem -Path "C:\Users" -Directory
+
+foreach ($Profile in $UserProfiles) {
+    $AppDataPath = "$($Profile.FullName)\AppData"
+
+    # Skip system profiles
+    if ($Profile.Name -in ("Administrator", "Public", "Default", "Default User")) {
+        Write-Host "Skipping system profile: $($Profile.Name)"
+        continue
+    }
+
+    if (Test-Path $AppDataPath) {
+        # Calculate folder size
+        $SizeBytes = (Get-ChildItem -Path $AppDataPath -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+        $SizeMB = [math]::Round($SizeBytes / 1MB, 2)
+
+        if ($SizeMB -gt $ThresholdMB) {
+            Write-Host "Deleting $AppDataPath (Size: $SizeMB MB)"
+            Remove-Item -Path $AppDataPath -Recurse -Force -ErrorAction SilentlyContinue
+        } else {
+            Write-Host "Skipping $AppDataPath (Size: $SizeMB MB)"
+        }
+    } else {
+        Write-Host "No AppData folder found for $($Profile.Name)"
+    }
+}
