@@ -1,0 +1,139 @@
+# PowerShell Script to Clean Temporary Files
+# This script removes temporary files from common locations
+
+# Log file setup
+$LogFile = "C:\Logs\TempCleanup_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+$LogFolder = Split-Path $LogFile -Parent
+
+# Create log directory if it doesn't exist
+if (!(Test-Path $LogFolder)) {
+    New-Item -ItemType Directory -Path $LogFolder -Force | Out-Null
+}
+
+# Start logging
+Start-Transcript -Path $LogFile -Append
+
+Write-Host "===== Temporary File Cleanup Script =====" -ForegroundColor Green
+Write-Host "Started: $(Get-Date)" -ForegroundColor Yellow
+Write-Host "Computer: $env:COMPUTERNAME" -ForegroundColor Yellow
+Write-Host "Running as: $env:USERNAME" -ForegroundColor Yellow
+Write-Host "----------------------------------------" -ForegroundColor Green
+
+# Function to safely remove items with error handling
+function Remove-TempItems {
+    param (
+        [string]$Path,
+        [string]$Description
+    )
+    
+    Write-Host "Cleaning $Description..." -ForegroundColor Cyan
+    
+    if (Test-Path $Path) {
+        $initialSize = (Get-ChildItem -Path $Path -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB
+        $initialSize = [math]::Round($initialSize, 2)
+        Write-Host "Initial size: $initialSize MB" -ForegroundColor Yellow
+        
+        try {
+            # Get items to remove, excluding any in use
+            Get-ChildItem -Path $Path -Recurse -Force -ErrorAction SilentlyContinue | 
+            Where-Object { !$_.PSIsContainer } | 
+            ForEach-Object {
+                try {
+                    Remove-Item $_.FullName -Force -ErrorAction Stop
+                }
+                catch {
+                    Write-Host "Could not remove $($_.FullName): $($_.Exception.Message)" -ForegroundColor Red
+                }
+            }
+            
+            # Try to remove empty folders
+            Get-ChildItem -Path $Path -Recurse -Force -Directory -ErrorAction SilentlyContinue | 
+            Sort-Object -Property FullName -Descending | 
+            ForEach-Object {
+                try {
+                    $currentFolder = $_.FullName
+                    if ((Get-ChildItem -Path $currentFolder -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { !$_.PSIsContainer }).Count -eq 0) {
+                        Remove-Item $currentFolder -Force -Recurse -ErrorAction Stop
+                    }
+                }
+                catch {
+                    Write-Host "Could not remove folder $($_.FullName): $($_.Exception.Message)" -ForegroundColor Red
+                }
+            }
+            
+            # Calculate freed space
+            if (Test-Path $Path) {
+                $finalSize = (Get-ChildItem -Path $Path -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB
+                $finalSize = [math]::Round($finalSize, 2)
+                $freedSpace = $initialSize - $finalSize
+                $freedSpace = [math]::Round($freedSpace, 2)
+                Write-Host "Final size: $finalSize MB" -ForegroundColor Yellow
+                Write-Host "Freed space: $freedSpace MB" -ForegroundColor Green
+            }
+            else {
+                Write-Host "Directory no longer exists. Freed $initialSize MB" -ForegroundColor Green
+            }
+        }
+        catch {
+            Write-Host "Error accessing $Path : $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+    else {
+        Write-Host "Path $Path does not exist or is not accessible" -ForegroundColor Yellow
+    }
+    
+    Write-Host "----------------------------------------" -ForegroundColor Green
+}
+
+# Locations to clean
+$tempFolders = @(
+    @{Path = "C:\Windows\Temp"; Description = "Windows Temp folder"},
+    @{Path = "$env:TEMP"; Description = "User Temp folder"},
+    @{Path = "$env:USERPROFILE\AppData\Local\Temp"; Description = "Local AppData Temp"},
+    @{Path = "$env:USERPROFILE\AppData\Local\Microsoft\Windows\INetCache"; Description = "IE Cache"},
+    @{Path = "$env:USERPROFILE\AppData\Local\Microsoft\Windows\WebCache"; Description = "Web Cache"},
+    @{Path = "$env:USERPROFILE\AppData\Local\Microsoft\Windows\Temporary Internet Files"; Description = "Temporary Internet Files"},
+    @{Path = "$env:USERPROFILE\AppData\Local\CrashDumps"; Description = "Crash Dumps"},
+    @{Path = "$env:USERPROFILE\AppData\Local\Microsoft\Windows\WER"; Description = "Windows Error Reports"}
+)
+
+# Chrome Cache - for all user profiles
+$chromeCache = @()
+$userFolders = Get-ChildItem "C:\Users" -Directory
+foreach ($user in $userFolders) {
+    $chromePath = "$($user.FullName)\AppData\Local\Google\Chrome\User Data\Default\Cache"
+    if (Test-Path $chromePath) {
+        $chromeCache += @{Path = $chromePath; Description = "Chrome Cache for $($user.Name)"}
+    }
+}
+$tempFolders += $chromeCache
+
+# Firefox Cache - for all user profiles
+$firefoxCache = @()
+$userFolders = Get-ChildItem "C:\Users" -Directory
+foreach ($user in $userFolders) {
+    $profilesPath = "$($user.FullName)\AppData\Local\Mozilla\Firefox\Profiles"
+    if (Test-Path $profilesPath) {
+        $profiles = Get-ChildItem $profilesPath -Directory
+        foreach ($profile in $profiles) {
+            $cachePath = "$($profile.FullName)\cache2"
+            if (Test-Path $cachePath) {
+                $firefoxCache += @{Path = $cachePath; Description = "Firefox Cache for $($user.Name)"}
+            }
+        }
+    }
+}
+$tempFolders += $firefoxCache
+
+# Clean each location
+foreach ($folder in $tempFolders) {
+    Remove-TempItems -Path $folder.Path -Description $folder.Description
+}
+
+# Summary
+Write-Host "===== Cleanup Complete =====" -ForegroundColor Green
+Write-Host "Finished: $(Get-Date)" -ForegroundColor Yellow
+Write-Host "Log file: $LogFile" -ForegroundColor Yellow
+
+# Stop logging
+Stop-Transcript
