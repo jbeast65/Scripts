@@ -1,0 +1,9 @@
+{
+  "server_url": "http://YOUR_SERVER_HOST_OR_DOMAIN:8000",
+  "api_key": "your_long_random_key",
+  "hotkey": "ctrl+shift+r",
+  "auto_paste": true,
+  "language": "en",
+  "provider": "openai"
+}
+
