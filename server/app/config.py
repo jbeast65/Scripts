@@ -11,6 +11,8 @@ class Settings:
     faster_whisper_model: str
     faster_whisper_device: str
     faster_whisper_cpu_threads: int
+    jwt_secret: str
+    google_client_id: str | None
 
 
 def get_settings() -> Settings:
@@ -22,6 +24,8 @@ def get_settings() -> Settings:
         faster_whisper_model=os.getenv("FASTER_WHISPER_MODEL", "base.en"),
         faster_whisper_device=os.getenv("FASTER_WHISPER_DEVICE", "cpu"),
         faster_whisper_cpu_threads=int(os.getenv("FASTER_WHISPER_CPU_THREADS", "4")),
+        jwt_secret=os.getenv("JWT_SECRET", "change_me"),
+        google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
     )
 
 

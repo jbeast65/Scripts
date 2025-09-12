@@ -42,9 +42,14 @@ AUTOTEXT_MACROS: Dict[str, str] = {
 }
 
 
-def _apply_macros(text: str) -> str:
+def _apply_macros(text: str, user_macros: dict[str, str] | None = None) -> str:
     lowered = text.lower()
-    for trigger, expansion in AUTOTEXT_MACROS.items():
+    # Merge user macros if provided (user overrides default on same trigger)
+    merged = dict(AUTOTEXT_MACROS)
+    if user_macros:
+        for k, v in user_macros.items():
+            merged[k.lower()] = v
+    for trigger, expansion in merged.items():
         if trigger in lowered:
             # Replace the trigger phrase with the expansion
             pattern = re.compile(re.escape(trigger), flags=re.IGNORECASE)
@@ -74,10 +79,10 @@ def _apply_punctuation(text: str) -> str:
     return text.strip()
 
 
-def process_text_with_commands(text: str) -> str:
+def process_text_with_commands(text: str, user_macros: dict[str, str] | None = None) -> str:
     if not text:
         return text
-    text = _apply_macros(text)
+    text = _apply_macros(text, user_macros=user_macros)
     text = _apply_punctuation(text)
     return text
 

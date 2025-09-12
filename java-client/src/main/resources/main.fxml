@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21.0.3" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ortho.MainController">
+    <top>
+        <ToolBar>
+            <Button text="Record" onAction="#onRecord" />
+            <Button text="Stop" onAction="#onStop" />
+            <Separator />
+            <Label text="Provider:" />
+            <ChoiceBox fx:id="providerChoice" />
+            <Separator />
+            <Button text="Refresh Autotexts" onAction="#onRefreshAutotexts" />
+            <Button text="Sign Out" onAction="#onSignOut" />
+        </ToolBar>
+    </top>
+    <center>
+        <SplitPane dividerPositions="0.5">
+            <items>
+                <VBox spacing="6.0">
+                    <children>
+                        <Label text="Transcription" />
+                        <TextArea fx:id="transcriptArea" prefRowCount="12" />
+                    </children>
+                    <padding><Insets top="8" left="8" right="8" bottom="8"/></padding>
+                </VBox>
+                <VBox spacing="6.0">
+                    <children>
+                        <Label text="Autotexts" />
+                        <TableView fx:id="autotextTable">
+                            <columns>
+                                <TableColumn fx:id="triggerCol" text="Trigger" prefWidth="150" />
+                                <TableColumn fx:id="expansionCol" text="Expansion" prefWidth="300" />
+                            </columns>
+                        </TableView>
+                        <HBox spacing="6.0">
+                            <children>
+                                <TextField fx:id="triggerField" promptText="Trigger (e.g., macro hip exam)" />
+                                <TextField fx:id="expansionField" promptText="Expansion text" />
+                                <Button text="Add" onAction="#onAddAutotext" />
+                                <Button text="Update" onAction="#onUpdateAutotext" />
+                                <Button text="Delete" onAction="#onDeleteAutotext" />
+                            </children>
+                        </HBox>
+                        <Label fx:id="statusLabel" text="" />
+                    </children>
+                    <padding><Insets top="8" left="8" right="8" bottom="8"/></padding>
+                </VBox>
+            </items>
+        </SplitPane>
+    </center>
+</BorderPane>
+
