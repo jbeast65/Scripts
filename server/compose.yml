@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    environment:
+      - SERVER_API_KEY=${SERVER_API_KEY}
+      - PROVIDER=${PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - FASTER_WHISPER_MODEL=${FASTER_WHISPER_MODEL:-base.en}
+      - FASTER_WHISPER_DEVICE=${FASTER_WHISPER_DEVICE:-cpu}
+      - FASTER_WHISPER_CPU_THREADS=${FASTER_WHISPER_CPU_THREADS:-4}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
